@@ -25,7 +25,7 @@ resource "helm_release" "external_dns" {
   repository = "https://charts.bitnami.com/bitnami"
   chart      = "external-dns"
   namespace  = "kube-system"
-  version    = var.external_dns_version
+  # version    = var.external_dns_version
 
   timeout         = 600
   wait            = true
