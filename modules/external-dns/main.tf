@@ -37,6 +37,13 @@ resource "helm_release" "external_dns" {
 
   values = [
     yamlencode({
+      image = {
+        registry   = "registry.k8s.io"
+        repository = "external-dns/external-dns"
+        tag        = "v0.14.2"
+        pullPolicy = "IfNotPresent"
+      }
+
       serviceAccount = {
         create = true
         name   = "external-dns"
@@ -44,13 +51,13 @@ resource "helm_release" "external_dns" {
           "eks.amazonaws.com/role-arn" = module.external_dns_irsa_role.iam_role_arn
         }
       }
+
       provider = "aws"
-      policy   = "sync-upsert-only" # Prevent deleting records not managed by this release immediately (safer)
+      policy   = "sync-upsert-only"
       sources  = ["ingress", "service"]
       domainFilters = [var.domain_name]
-      
-      # Add logging for debugging
-      logLevel = "debug"
+
+      logLevel  = "debug"
       logFormat = "json"
     })
   ]
