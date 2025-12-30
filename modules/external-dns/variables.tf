@@ -21,5 +21,5 @@ variable "eks_oidc_provider_arn" {
 variable "external_dns_version" {
   description = "Bitnami chart version for external-dns"
   type        = string
-  default     = "8.3.7" 
+  default     = "6.31.3" 
 }
