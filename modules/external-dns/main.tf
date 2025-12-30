@@ -27,9 +27,11 @@ resource "helm_release" "external_dns" {
   namespace  = "kube-system"
   version    = var.external_dns_version
 
-  timeout = 600
-  wait    = true
-  atomic  = true
+  timeout         = 600
+  wait            = true
+  atomic          = false  # Allow debugging on failure instead of immediate rollback
+  cleanup_on_fail = false  # Keep resources for troubleshooting
+  max_history     = 3
 
   disable_openapi_validation = true
 
@@ -46,6 +48,11 @@ resource "helm_release" "external_dns" {
       policy   = "sync-upsert-only" # Prevent deleting records not managed by this release immediately (safer)
       sources  = ["ingress", "service"]
       domainFilters = [var.domain_name]
+      
+      # Add logging for debugging
+      logLevel = "debug"
+      logFormat = "json"
     })
   ]
 }
+

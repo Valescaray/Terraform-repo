@@ -74,37 +74,42 @@ resource "helm_release" "argocd" {
       notifications = {
         enabled = false
       }
-
-      extraObjects = [
-        {
-          apiVersion = "argoproj.io/v1alpha1"
-          kind       = "Application"
-          metadata = {
-            name      = "bootstrap"
-            namespace = local.argocd_namespace
-          }
-          spec = {
-            project = "default"
-            source = {
-              repoURL        = var.gitops_repo_url
-              targetRevision = var.gitops_repo_revision
-              path           = var.gitops_repo_path
-            }
-            destination = {
-              server    = "https://kubernetes.default.svc"
-              namespace = local.argocd_namespace
-            }
-            syncPolicy = {
-              automated = {
-                prune    = true
-                selfHeal = true
-              }
-            }
-          }
-        }
-      ]
     })
   ]
 
   depends_on = [kubernetes_namespace.argocd]
+}
+
+# Bootstrap Application - Created separately to avoid CRD timing issues
+resource "kubernetes_manifest" "bootstrap_application" {
+  count = var.enabled ? 1 : 0
+
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
+    metadata = {
+      name      = "bootstrap"
+      namespace = local.argocd_namespace
+    }
+    spec = {
+      project = "default"
+      source = {
+        repoURL        = var.gitops_repo_url
+        targetRevision = var.gitops_repo_revision
+        path           = var.gitops_repo_path
+      }
+      destination = {
+        server    = "https://kubernetes.default.svc"
+        namespace = local.argocd_namespace
+      }
+      syncPolicy = {
+        automated = {
+          prune    = true
+          selfHeal = true
+        }
+      }
+    }
+  }
+
+  depends_on = [helm_release.argocd]
 }
