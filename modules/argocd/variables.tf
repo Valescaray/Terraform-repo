@@ -41,3 +41,8 @@ variable "gitops_repo_path" {
   type        = string
   default     = "argocd/applications"
 }
+
+variable "acm_certificate_arn" {
+  description = "ARN of the ACM certificate for SSL/TLS"
+  type        = string
+}

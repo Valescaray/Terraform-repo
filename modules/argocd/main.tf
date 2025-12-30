@@ -12,9 +12,6 @@ resource "kubernetes_namespace" "argocd" {
   }
 }
 
-
-
-
 # ArgoCD Helm Release
 resource "helm_release" "argocd" {
   count = var.enabled ? 1 : 0
@@ -37,7 +34,7 @@ resource "helm_release" "argocd" {
 
       configs = {
         params = {
-          "server.insecure" = true
+          "server.insecure" = false
         }
       }
 
@@ -50,7 +47,8 @@ resource "helm_release" "argocd" {
             "alb.ingress.kubernetes.io/target-type"          = "ip"
             "alb.ingress.kubernetes.io/listen-ports"         = "[{\"HTTP\": 80}, {\"HTTPS\": 443}]"
             "alb.ingress.kubernetes.io/ssl-redirect"         = "443"
-            "alb.ingress.kubernetes.io/backend-protocol"     = "HTTP"
+            "alb.ingress.kubernetes.io/backend-protocol"     = "HTTPS"
+            "alb.ingress.kubernetes.io/certificate-arn"      = var.acm_certificate_arn
           }
           hosts = [local.argocd_hostname]
           tls = [{
@@ -58,9 +56,7 @@ resource "helm_release" "argocd" {
           }]
         }
 
-        extraArgs = [
-          "--insecure"
-        ]
+        extraArgs = []
       }
 
       repoServer = {
@@ -81,45 +77,46 @@ resource "helm_release" "argocd" {
 }
 
 # Bootstrap Application - Created separately to avoid CRD timing issues
-resource "kubernetes_manifest" "bootstrap_application" {
+# Using null_resource with kubectl to avoid plan-time CRD validation
+resource "null_resource" "bootstrap_application" {
   count = var.enabled ? 1 : 0
 
-  manifest = {
-    apiVersion = "argoproj.io/v1alpha1"
-    kind       = "Application"
-    metadata = {
-      name      = "bootstrap"
-      namespace = local.argocd_namespace
-    }
-    spec = {
-      project = "default"
-      source = {
-        repoURL        = var.gitops_repo_url
-        targetRevision = var.gitops_repo_revision
-        path           = var.gitops_repo_path
-      }
-      destination = {
-        server    = "https://kubernetes.default.svc"
-        namespace = local.argocd_namespace
-      }
-      syncPolicy = {
-        automated = {
-          prune    = true
-          selfHeal = true
-        }
-      }
-    }
+  triggers = {
+    gitops_repo_url      = var.gitops_repo_url
+    gitops_repo_revision = var.gitops_repo_revision
+    gitops_repo_path     = var.gitops_repo_path
+    argocd_namespace     = local.argocd_namespace
   }
 
-  # Wait for CRDs to be installed by ArgoCD
-  wait {
-    fields = {
-      "status.health.status" = "Healthy"
-    }
+  provisioner "local-exec" {
+    command = <<-EOT
+      cat <<EOF | kubectl apply -f -
+      apiVersion: argoproj.io/v1alpha1
+      kind: Application
+      metadata:
+        name: bootstrap
+        namespace: ${local.argocd_namespace}
+      spec:
+        project: default
+        source:
+          repoURL: ${var.gitops_repo_url}
+          targetRevision: ${var.gitops_repo_revision}
+          path: ${var.gitops_repo_path}
+        destination:
+          server: https://kubernetes.default.svc
+          namespace: ${local.argocd_namespace}
+        syncPolicy:
+          automated:
+            prune: true
+            selfHeal: true
+      EOF
+    EOT
   }
 
-  # Allow Terraform to manage this even if CRDs don't exist during plan
-  computed_fields = ["status"]
+  provisioner "local-exec" {
+    when    = destroy
+    command = "kubectl delete application bootstrap -n ${self.triggers.argocd_namespace} --ignore-not-found=true"
+  }
 
   depends_on = [helm_release.argocd]
 }

@@ -123,6 +123,7 @@ module "argocd" {
   domain_name      = var.domain_name
   environment      = var.environment
   gitops_repo_url  = var.gitops_repo_url
+  acm_certificate_arn = module.acm.certificate_arn
   
   depends_on = [module.eks, module.alb]
 }
