@@ -111,5 +111,16 @@ resource "kubernetes_manifest" "bootstrap_application" {
     }
   }
 
+  # Wait for CRDs to be installed by ArgoCD
+  wait {
+    fields = {
+      "status.health.status" = "Healthy"
+    }
+  }
+
+  # Allow Terraform to manage this even if CRDs don't exist during plan
+  computed_fields = ["status"]
+
   depends_on = [helm_release.argocd]
 }
+
