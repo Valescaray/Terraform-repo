@@ -19,7 +19,7 @@ variable "eks_oidc_provider_arn" {
 }
 
 variable "external_dns_version" {
-  description = "Helm chart version for external-dns"
+  description = "Bitnami chart version for external-dns"
   type        = string
-  default     = "6.20.4" # Verify latest version or use a reasonable default
+  default     = "9.0.3" 
 }

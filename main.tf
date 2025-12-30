@@ -120,6 +120,7 @@ module "argocd" {
   enabled          = var.argocd_enabled
   chart_version    = var.argocd_version
   eks_cluster_name = module.eks.cluster_name
+  aws_region       = var.aws_region
   domain_name      = var.domain_name
   environment      = var.environment
   gitops_repo_url  = var.gitops_repo_url

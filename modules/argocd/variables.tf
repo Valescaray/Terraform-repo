@@ -46,3 +46,8 @@ variable "acm_certificate_arn" {
   description = "ARN of the ACM certificate for SSL/TLS"
   type        = string
 }
+
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+}

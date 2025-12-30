@@ -86,10 +86,13 @@ resource "null_resource" "bootstrap_application" {
     gitops_repo_revision = var.gitops_repo_revision
     gitops_repo_path     = var.gitops_repo_path
     argocd_namespace     = local.argocd_namespace
+    aws_region           = var.aws_region
+    eks_cluster_name     = var.eks_cluster_name
   }
 
   provisioner "local-exec" {
     command = <<-EOT
+      aws eks update-kubeconfig --region ${var.aws_region} --name ${var.eks_cluster_name}
       cat <<EOF | kubectl apply -f -
       apiVersion: argoproj.io/v1alpha1
       kind: Application
@@ -111,11 +114,18 @@ resource "null_resource" "bootstrap_application" {
             selfHeal: true
       EOF
     EOT
+    
+    environment = {
+      AWS_REGION = var.aws_region
+    }
   }
 
   provisioner "local-exec" {
     when    = destroy
-    command = "kubectl delete application bootstrap -n ${self.triggers.argocd_namespace} --ignore-not-found=true"
+    command = <<-EOT
+      aws eks update-kubeconfig --region ${self.triggers.aws_region} --name ${self.triggers.eks_cluster_name}
+      kubectl delete application bootstrap -n ${self.triggers.argocd_namespace} --ignore-not-found=true
+    EOT
   }
 
   depends_on = [helm_release.argocd]
