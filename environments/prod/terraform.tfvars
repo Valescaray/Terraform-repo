@@ -6,7 +6,7 @@ availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
 single_nat_gateway = false  # High availability for prod
 
 # EKS Configuration
-eks_cluster_version    = "1.28"
+eks_cluster_version    = "1.30"
 eks_node_instance_types = ["t3.large"]
 eks_node_desired_size   = 3
 eks_node_min_size       = 2
