@@ -20,7 +20,7 @@ resource "aws_secretsmanager_secret_version" "backend" {
 
   secret_id = aws_secretsmanager_secret.backend[0].id
   secret_string = jsonencode({
-    database-url           = "postgresql://user:password@postgres-service:5432/invoice_analyzer"
+    database-url           = "postgresql+asyncpg://postgres:password@localhost:5432/invoice_analyzer"
     aws-access-key-id      = "PLACEHOLDER_UPDATE_ME"
     aws-secret-access-key  = "PLACEHOLDER_UPDATE_ME"
     openai-api-key         = "PLACEHOLDER_UPDATE_ME"
